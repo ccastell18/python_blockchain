@@ -1,5 +1,9 @@
 # initialize the blockchain list
 blockchain = []
+# outstanding transactions
+open_transactions = []
+# global sender for instance of blockchain
+owner = 'Chris'
 
 
 # returns last blockchain value
@@ -10,20 +14,31 @@ def get_last_blockchain_value():
 
 
 # adds a blockchain value
-def add_value(transaction_amount, last_transaction=[1]):
-    """appends new value to blockchain
-      transaction_amount-the amount to be added
-      last_transaction-last blockchain value(default 1)
-      """
-    if last_transaction == None:
-        last_transaction = [1]
-    blockchain.append([last_transaction, transaction_amount])
+# sender, recipient, and amount are all basic information of a blockchain transaction instance.
+def add_transaction(recipient, sender=owner, amount=1.0):
+    """transaction makes a dictionary of sender, recipient, and amount """
+    transaction = {
+        'sender': sender,
+        'recipient': recipient,
+        'amount': amount
+    }
+    open_transactions.append(transaction)
+
+
+# mining a block, which confirms the block.
+def mine_block():
+    pass
 
 
 # returns user value in a float
 def get_trasnsaction_value():
-    user_input = float(input('Your transaction: '))
-    return user_input
+    # gets dict info for the transactions. sender is a global sender for this instance
+    tx_recipient = input('Enter the recipient: ')
+
+    # should be a string identifier
+    tx_amount = float(input('Your transaction amount: '))
+    # returns a tuple
+    return tx_recipient, tx_amount
 
 
 def get_user_choice():
@@ -79,8 +94,13 @@ while waiting_for_input:
     print('q: Quit')
     user_choice = get_user_choice()
     if user_choice == '1':
-        tx_amount = get_trasnsaction_value()
-        add_value(tx_amount, get_last_blockchain_value())
+        # tx data gets recipient and sender
+        tx_data = get_trasnsaction_value()
+        # tuple unpack
+        recipient, amount = tx_data
+        # amount is hardcoded amount bcause we are skipping the sender parameter in the add_transaction function.
+        add_transaction(recipient, amount=amount)
+        print(open_transactions)
     elif user_choice == '2':
         print_blockchain_elements()
     elif user_choice == 'h':
