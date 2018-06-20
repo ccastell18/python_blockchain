@@ -4,8 +4,8 @@ genesis_block = {
     'index': 0,
     'trasnsactions': [],
 }
-# initialize the blockchain list
-blockchain = []
+# initialize the blockchain list. The genesis block is added to the blockchain for a starting block in the chain.
+blockchain = [genesis_block]
 # outstanding transactions
 open_transactions = []
 # global sender for instance of blockchain
@@ -35,9 +35,17 @@ def add_transaction(recipient, sender=owner, amount=1.0):
 def mine_block():
     # gets the last element in the blockchain.
     last_block = blockchain[-1]
+    # hashed_block is a string version of the block. "previous_hash", index, transactions.
+    hashed_block = ''
+    # for loop on dict only loops through keys. Loops through each key to return the value.
+    for key in last_block:
+        value = last_block[key]
+        hashed_block = hashed_block + str(value)
+    print(hashed_block)
     # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list.
     block = {
-        'previous_hash': 'xyz',
+        'previous_hash': hashed_block,
+        'index': len(blockchain),
         'trasnsactions': open_transactions,
     }
     # attaches the block to the blockchain
@@ -103,7 +111,8 @@ waiting_for_input = True
 while waiting_for_input:
     print('Please choose')
     print('1: Add a new transaction value')
-    print('2: Output the blockchain')
+    print('2: Mine a new block')
+    print('3: Output the blockchain blocks')
     print('h: Manipulate the chain')
     print('q: Quit')
     user_choice = get_user_choice()
@@ -116,6 +125,8 @@ while waiting_for_input:
         add_transaction(recipient, amount=amount)
         print(open_transactions)
     elif user_choice == '2':
+        mine_block()
+    elif user_choice == '3':
         print_blockchain_elements()
     elif user_choice == 'h':
         if len(blockchain) >= 1:
@@ -124,10 +135,10 @@ while waiting_for_input:
         waiting_for_input = False
     else:
         print('Invalid input. Please try again')
-    if not verify_chain():
-        print_blockchain_elements()
-        print('Invalid blockchain')
-        break
+    # if not verify_chain():
+    #     print_blockchain_elements()
+    #     print('Invalid blockchain')
+    #     break
 else:
     print('User left!')
 print('Done!')
