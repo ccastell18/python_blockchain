@@ -1,1 +1,3 @@
 # Python_blockchain
+
+This is a tutorial that takes you from building easy Python methods, to an interactive blockchain/cryptocurrency. It starts with simple inputs for data and storing in files. It involves learning blockchain methods like creating blocks, transactions, and mining. The data will then be connected to a Flask database. Then the methods will be connected to the front end using Vue. The front end is a template and I can't take credit for the design elements, only the functionality of the pages. Then everything will be connected through a node network so you can send currency to others and see balances of wallets changing. This will be shown in a long blockchain at the end.
