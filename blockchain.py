@@ -1,3 +1,9 @@
+# the initial block in the chain, so the chain has a starting block.
+genesis_block = {
+    'previous_hash': '',
+    'index': 0,
+    'trasnsactions': [],
+}
 # initialize the blockchain list
 blockchain = []
 # outstanding transactions
@@ -25,9 +31,17 @@ def add_transaction(recipient, sender=owner, amount=1.0):
     open_transactions.append(transaction)
 
 
-# mining a block, which confirms the block.
+# mining a block, which confirms the block. takes the open transactions and makes them blocks. Then adds them to the blockchain.
 def mine_block():
-    pass
+    # gets the last element in the blockchain.
+    last_block = blockchain[-1]
+    # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list.
+    block = {
+        'previous_hash': 'xyz',
+        'trasnsactions': open_transactions,
+    }
+    # attaches the block to the blockchain
+    blockchain.append(block)
 
 
 # returns user value in a float
