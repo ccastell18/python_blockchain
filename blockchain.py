@@ -1,8 +1,11 @@
+# reward for mining a block. CAPS mean global constant
+MINING_REWARD = 10
+
 # the initial block in the chain, so the chain has a starting block.
 genesis_block = {
     'previous_hash': '',
     'index': 0,
-    'trasnsactions': [],
+    'transactions': [],
 }
 # initialize the blockchain list. The genesis block is added to the blockchain for a starting block in the chain.
 blockchain = [genesis_block]
@@ -10,6 +13,8 @@ blockchain = [genesis_block]
 open_transactions = []
 # global sender for instance of blockchain
 owner = 'Chris'
+# all participants. All contained within a set with no duplicate names.
+participants = {'Chris'}
 
 
 def hash_block(block):
@@ -17,11 +22,46 @@ def hash_block(block):
     return '-'.join([str(block[key]) for key in block])
 
 
-# returns last blockchain value
+def get_balance(participant):
+    # returns a sum all transaction balances of the participant
+    # tx_sender looks at tx['amount'] for each block['transactions'] to see if sender was a participant for each block in the blockchain. already paid.
+    tx_sender = [[tx['amount'] for tx in block['transactions']
+                  if tx['sender'] == participant] for block in blockchain]
+    # gets open transactions amounts sent. Trying to pay
+    open_tx_sender = [tx['amount']
+                      for tx in open_transactions if tx['sender'] == participant]
+    # adds open transactions amount to sender balance list
+    tx_sender.append(open_tx_sender)
+    # summing tx['sender'] amount
+    amount_sent = 0
+    for tx in tx_sender:
+        if len(tx) > 0:
+            amount_sent += tx[0]
+    # returns sum of received amounts
+    tx_recipient = [[tx['amount'] for tx in block['transactions']
+                     if tx['recipient'] == participant] for block in blockchain]
+    amount_received = 0
+    for tx in tx_recipient:
+        if len(tx) > 0:
+            amount_received += tx[0]
+    # total transactions
+    return amount_received - amount_sent
+
+
 def get_last_blockchain_value():
+    # returns last blockchain value
     if len(blockchain) < 1:
         return None
     return blockchain[-1]
+
+# determining if sender has enough funds to send.
+
+
+def verify_transaction(transaction):
+    # gets the balance of the sender calling the sender on transaction block
+    sender_balance = get_balance(transaction['sender'])
+    # compares the balance from get_balance to transaction amount. Will return a boolean
+    return sender_balance >= transaction['amount']
 
 
 # adds a blockchain value
@@ -33,7 +73,14 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         'recipient': recipient,
         'amount': amount
     }
-    open_transactions.append(transaction)
+    # checks transaction sender balance against transaction sender amount
+    if verify_transaction(transaction):
+        open_transactions.append(transaction)
+        # adds the sender and recipient to participant set
+        participants.add(sender)
+        participants.add(recipient)
+        return True
+    return False
 
 
 # mining a block, which confirms the block. takes the open transactions and makes them blocks. Then adds them to the blockchain.
@@ -42,18 +89,28 @@ def mine_block():
     last_block = blockchain[-1]
     # hashed_block takes in the hash_block function and stores it in previous_hash to verify it matches the previous block.
     hashed_block = hash_block(last_block)
-    # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list.
+    # reward for mining a block transaction
+    reward_transaction = {
+        'sender': 'MINING',
+        'recipient': owner,
+        'amount': MINING_REWARD
+    }
+    # copied the whole list of open transactions to append rewards in case there is a problem with open_transactions.
+    copied_transactions = open_transactions[:]
+    copied_transactions.append(reward_transaction)
+    # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list. The copied_transactions makes it so the block is managed locally, not globally
     block = {
         'previous_hash': hashed_block,
         'index': len(blockchain),
-        'trasnsactions': open_transactions,
+        'transactions': copied_transactions
     }
     # attaches the block to the blockchain
     blockchain.append(block)
+    return True
 
 
 # returns user value in a float
-def get_trasnsaction_value():
+def get_transaction_value():
     # gets dict info for the transactions. sender is a global sender for this instance
     tx_recipient = input('Enter the recipient: ')
     # should be a string identifier
@@ -102,27 +159,35 @@ while waiting_for_input:
     print('1: Add a new transaction value')
     print('2: Mine a new block')
     print('3: Output the blockchain blocks')
+    print('4: Output participants set')
     print('h: Manipulate the chain')
     print('q: Quit')
     user_choice = get_user_choice()
     if user_choice == '1':
         # tx data gets recipient and sender
-        tx_data = get_trasnsaction_value()
+        tx_data = get_transaction_value()
         # tuple unpack
         recipient, amount = tx_data
-        # amount is hardcoded amount bcause we are skipping the sender parameter in the add_transaction function.
-        add_transaction(recipient, amount=amount)
+        # amount is hardcoded amount bcause we are skipping the sender parameter in the add_transaction function. We can check true or false because a boolean is returned on the function.
+        if add_transaction(recipient, amount=amount):
+            print('Added transactions!')
+        else:
+            print('Transaction failed')
         print(open_transactions)
     elif user_choice == '2':
-        mine_block()
+        if mine_block():
+            # resets open_transactions once all blocks are mined.
+            open_transactions = []
     elif user_choice == '3':
         print_blockchain_elements()
+    elif user_choice == '4':
+        print(participants)
     elif user_choice == 'h':
         if len(blockchain) >= 1:
             blockchain[0] = {
                 'previous_hash': '',
                 'index': 0,
-                'trasnsactions': [{'sender': 'Max', 'recipient': 'Chris', 'amount': 100.00}],
+                'transactions': [{'sender': 'Max', 'recipient': 'Chris', 'amount': 100.00}]
             }
     elif user_choice == 'q':
         waiting_for_input = False
@@ -132,6 +197,7 @@ while waiting_for_input:
         print_blockchain_elements()
         print('Invalid blockchain')
         break
+    print(get_balance('Chris'))
 else:
     print('User left!')
 print('Done!')
