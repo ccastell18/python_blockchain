@@ -12,6 +12,11 @@ open_transactions = []
 owner = 'Chris'
 
 
+def hash_block(block):
+    # creates a hash for the current block and str() is used to stringify the value so it can use the join method.
+    return '-'.join([str(block[key]) for key in block])
+
+
 # returns last blockchain value
 def get_last_blockchain_value():
     if len(blockchain) < 1:
@@ -35,13 +40,8 @@ def add_transaction(recipient, sender=owner, amount=1.0):
 def mine_block():
     # gets the last element in the blockchain.
     last_block = blockchain[-1]
-    # hashed_block is a string version of the block. "previous_hash", index, transactions.
-    hashed_block = ''
-    # for loop on dict only loops through keys. Loops through each key to return the value.
-    for key in last_block:
-        value = last_block[key]
-        hashed_block = hashed_block + str(value)
-    print(hashed_block)
+    # hashed_block takes in the hash_block function and stores it in previous_hash to verify it matches the previous block.
+    hashed_block = hash_block(last_block)
     # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list.
     block = {
         'previous_hash': hashed_block,
@@ -56,7 +56,6 @@ def mine_block():
 def get_trasnsaction_value():
     # gets dict info for the transactions. sender is a global sender for this instance
     tx_recipient = input('Enter the recipient: ')
-
     # should be a string identifier
     tx_amount = float(input('Your transaction amount: '))
     # returns a tuple
@@ -83,27 +82,17 @@ def print_blockchain_elements():
 
 
 def verify_chain():
-    # block_index = 0
-    is_valid = True
-    for block_index in range(len(blockchain)):
-        if block_index == 0:
+    # validates the list of blocks. Checks the hash the old block and stores hashed version in the previous_hash value of the next block. Makes sure every hash match in the block or it will break.
+    # wrapping a list in enumerate will returns a tuple, index of element and element itself. Needs to be upacked.
+    for (index, block) in enumerate(blockchain):
+        # genesis block
+        if index == 0:
             continue
-        elif blockchain[block_index][0] == blockchain[block_index-1]:
-            is_valid = True
-        else:
-            is_valid = False
-            break
-    # for block in blockchain:
-    #     if block_index == 0:
-    #         block_index += 1
-    #         continue
-    #     if block[0] == blockchain[block_index-1]:
-    #         is_valid = True
-    #     else:
-    #         is_valid = False
-    #         break
-    #     block_index += 1
-    return is_valid
+        # every block stored has previous_hash
+        # compares current block 'previous_hash' with the hash from the hash_block function(previous block).Matching would great, but we are verifying so we are checking to see if they don't match.
+        if block['previous_hash'] != hash_block(blockchain[index-1]):
+            return False
+    return True
 
 
 waiting_for_input = True
@@ -130,15 +119,19 @@ while waiting_for_input:
         print_blockchain_elements()
     elif user_choice == 'h':
         if len(blockchain) >= 1:
-            blockchain[0] = [2]
+            blockchain[0] = {
+                'previous_hash': '',
+                'index': 0,
+                'trasnsactions': [{'sender': 'Max', 'recipient': 'Chris', 'amount': 100.00}],
+            }
     elif user_choice == 'q':
         waiting_for_input = False
     else:
         print('Invalid input. Please try again')
-    # if not verify_chain():
-    #     print_blockchain_elements()
-    #     print('Invalid blockchain')
-    #     break
+    if not verify_chain():
+        print_blockchain_elements()
+        print('Invalid blockchain')
+        break
 else:
     print('User left!')
 print('Done!')
