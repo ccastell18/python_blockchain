@@ -4,6 +4,7 @@ from functools import reduce
 import hashlib as hl
 # json library (imports complex data as strings, use double quotes on key, value)
 import json
+from collections import OrderedDict
 
 # reward for mining a block. CAPS mean global constant
 MINING_REWARD = 10
@@ -29,12 +30,13 @@ def hash_block(block):
     # creates a hash for the current block and str() is used to stringify the value so it can use the join method.
     # return '-'.join([str(block[key]) for key in block]) - old  hash
 
-    # hashlib hashes the block so it is unreadable unless you have the hash table.  sha256 creates a 64 character hash. The hash should be a string still. JSON.dumps takes the block, which is a dict, and turns it into a string. encode is called to re-encode to UTF8 as a binary string. Hexdigest is  used to translate sha256 binary string to normal characters. Now hash block contains all of the block's information, including previous_hash, to check if hashes match.
-    return hl.sha256(json.dumps(block).encode()).hexdigest()
+    # hashlib hashes the block so it is unreadable unless you have the hash table.  sha256 creates a 64 character hash. The hash should be a string still. JSON.dumps takes the block, which is a dict, and turns it into a string. encode is called to re-encode to UTF8 as a binary string. Hexdigest is  used to translate sha256 binary string to normal characters. Now hash block contains all of the block's information, including previous_hash, to check if hashes match. Sort_keys leads same dict to same string.
+    return hl.sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
 
 
 def valid_proof(transactions, last_hash, proof):
-    # guess is a string of transactions, last_hash, and proof. Then encoded to UTF8
+
+    # guess is a string of transactions, last_hash, and proof. Then encoded to UTF8. This hash is just for proof, for security.
     guess = (str(transactions) + str(last_hash) + str(proof)).encode()
     # takes the string and makes a hash of it. Hexdigest makes it a valid string
     guess_hash = hl.sha256(guess).hexdigest()
@@ -105,12 +107,17 @@ def verify_transaction(transaction):
 # adds a blockchain value
 # sender, recipient, and amount are all basic information of a blockchain transaction instance.
 def add_transaction(recipient, sender=owner, amount=1.0):
-    """transaction makes a dictionary of sender, recipient, and amount """
-    transaction = {
-        'sender': sender,
-        'recipient': recipient,
-        'amount': amount
-    }
+    # """transaction makes a dictionary of sender, recipient, and amount """
+    # transaction = {
+    #     'sender': sender,
+    #     'recipient': recipient,
+    #     'amount': amount
+    # }
+
+    # OrderedDict keeps all keys  and values in order so hashes will not change. It takes a list of tuples
+    transaction = OrderedDict(
+        [('sender', sender), ('recipient', recipient), ('amount', amount)])
+
     # checks transaction sender balance against transaction sender amount
     if verify_transaction(transaction):
         open_transactions.append(transaction)
@@ -129,12 +136,17 @@ def mine_block():
     hashed_block = hash_block(last_block)
     # proof should not include reward tranaction
     proof = proof_of_work()
-    # reward for mining a block transaction
-    reward_transaction = {
-        'sender': 'MINING',
-        'recipient': owner,
-        'amount': MINING_REWARD
-    }
+
+    # reward for mining a block transaction - old way
+    # reward_transaction = {
+    #     'sender': 'MINING',
+    #     'recipient': owner,
+    #     'amount': MINING_REWARD
+    # }
+
+    reward_transaction = OrderedDict(
+        [('sender', 'MINING'), ('recipient', owner), ('amount', MINING_REWARD)])
+
     # copied the whole list of open transactions to append rewards in case there is a problem with open_transactions.
     copied_transactions = open_transactions[:]
     copied_transactions.append(reward_transaction)
