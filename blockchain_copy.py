@@ -1,3 +1,5 @@
+# The original blockchain before breaking up into classes
+
 # built in library for high order functions
 from functools import reduce
 # hash library
