@@ -31,26 +31,46 @@ participants = {'Chris'}
 
 def load_data():
     with open('blockchain.txt', mode='r') as f:
+        # load data should be converted to OrderedDicts as they were saved in the blocks.
         # readlines reads all lines in a list. A list of strings
         file_content = f.readlines()
         # access the global variables
         global blockchain
         global open_transactions
-        # file content line one is the blockchain
-        blockchain = file_content[0]
-        # file content line two is the open transactions. [:-1] removes the \n.
-        open_transactions = file_content[1][:-1]
+        # file content line one is the blockchain. Convert from json to native python object. [:-1] removes \n
+        blockchain = json.loads(file_content[0][:-1])
+        updated_blockchain = []
+        # convert to OrderedDict
+        for block in blockchain:
+            updated_block = {
+                'previous_hash': block['previous_hash'],
+                'index': block['index'],
+                'proof': block['proof'],
+                # the ordered dict gets stored in the block
+                'transactions': [OrderedDict(
+                    [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
+            }
+            updated_blockchain.append(updated_block)
+        blockchain = updated_blockchain
+        # file content line two is the open transactions.s
+        open_transactions = json.loads(file_content[1])
+        updated_transactions = []
+        for tx in open_transactions:
+            updated_transaction = OrderedDict(
+                [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
+            updated_transactions.append(updated_transaction)
+        open_transactions = updated_transactions
 
 
 load_data()
 
 
 def save_data():
-    # store blockchains and open_transactions. mode write. Using with helps open and close the function. Cannot write a list, must convert to string.
+    # store blockchains and open_transactions. mode write. Using with helps open and close the function. Cannot write a list.
     with open('blockchain.txt', mode='w') as f:
-        f.write(str(blockchain))
+        f.write(json.dumps(blockchain))
         f.write('\n')
-        f.write(str(open_transactions))
+        f.write(json.dumps(open_transactions))
     # called when saving data or mining a block
 
 
@@ -58,6 +78,7 @@ def valid_proof(transactions, last_hash, proof):
 
     # guess is a string of transactions, last_hash, and proof. Then encoded to UTF8. This hash is just for proof, for security.
     guess = (str(transactions) + str(last_hash) + str(proof)).encode()
+    print(guess)
     # takes the string and makes a hash of it. Hexdigest makes it a valid string(removed when hash util was created.)
     guess_hash = hash_string_256(guess)
     print(guess_hash)
@@ -180,7 +201,6 @@ def mine_block():
     }
     # attaches the block to the blockchain
     blockchain.append(block)
-    save_data()
     return True
 
 
@@ -263,6 +283,7 @@ while waiting_for_input:
         if mine_block():
             # resets open_transactions once all blocks are mined.
             open_transactions = []
+            save_data()
     elif user_choice == '3':
         print_blockchain_elements()
     elif user_choice == '4':
