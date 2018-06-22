@@ -13,6 +13,7 @@ genesis_block = {
     'previous_hash': '',
     'index': 0,
     'transactions': [],
+    'proof': 100
 }
 # initialize the blockchain list. The genesis block is added to the blockchain for a starting block in the chain.
 blockchain = [genesis_block]
@@ -30,6 +31,27 @@ def hash_block(block):
 
     # hashlib hashes the block so it is unreadable unless you have the hash table.  sha256 creates a 64 character hash. The hash should be a string still. JSON.dumps takes the block, which is a dict, and turns it into a string. encode is called to re-encode to UTF8 as a binary string. Hexdigest is  used to translate sha256 binary string to normal characters. Now hash block contains all of the block's information, including previous_hash, to check if hashes match.
     return hl.sha256(json.dumps(block).encode()).hexdigest()
+
+
+def valid_proof(transactions, last_hash, proof):
+    # guess is a string of transactions, last_hash, and proof. Then encoded to UTF8
+    guess = (str(transactions) + str(last_hash) + str(proof)).encode()
+    # takes the string and makes a hash of it. Hexdigest makes it a valid string
+    guess_hash = hl.sha256(guess).hexdigest()
+    print(guess_hash)
+    return guess_hash[0:2] == '00'
+
+
+def proof_of_work():
+    # fetch last block of current blockchain
+    last_block = blockchain[-1]
+    # hashes the last block
+    last_hash = hash_block(last_block)
+    proof = 0
+    # used to call valid_proof function. Not is added because guess_hash should have '00' at the beginning.
+    while not valid_proof(open_transactions, last_hash, proof):
+        proof += 1
+    return proof
 
 
 def get_balance(participant):
@@ -105,7 +127,8 @@ def mine_block():
     last_block = blockchain[-1]
     # hashed_block takes in the hash_block function and stores it in previous_hash to verify it matches the previous block.
     hashed_block = hash_block(last_block)
-    print(hashed_block)
+    # proof should not include reward tranaction
+    proof = proof_of_work()
     # reward for mining a block transaction
     reward_transaction = {
         'sender': 'MINING',
@@ -115,11 +138,12 @@ def mine_block():
     # copied the whole list of open transactions to append rewards in case there is a problem with open_transactions.
     copied_transactions = open_transactions[:]
     copied_transactions.append(reward_transaction)
-    # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list. The copied_transactions makes it so the block is managed locally, not globally
+    # block is a dict because of key, vaule pairs. prev_hash is to help keep blocks in line. Transactions are the blocks sitting in the open_transaction list. The copied_transactions makes it so the block is managed locally, not globally. Proof is added the block to append the proof to the blockchain.
     block = {
         'previous_hash': hashed_block,
         'index': len(blockchain),
-        'transactions': copied_transactions
+        'transactions': copied_transactions,
+        'proof': proof
     }
     # attaches the block to the blockchain
     blockchain.append(block)
@@ -165,6 +189,10 @@ def verify_chain():
         # every block stored has previous_hash
         # compares current block 'previous_hash' with the hash from the hash_block function(previous block).Matching would great, but we are verifying so we are checking to see if they don't match.
         if block['previous_hash'] != hash_block(blockchain[index-1]):
+            return False
+        # extra step to check the proof to verify chains. Looks at each block transaction. [:-1] removes the reward block from the transaction block
+        if not valid_proof(block['transactions'][:-1], block['previous_hash'], block['proof']):
+            print("Proof of work is invalid")
             return False
     return True
 
