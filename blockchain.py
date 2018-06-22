@@ -29,6 +29,31 @@ owner = 'Chris'
 participants = {'Chris'}
 
 
+def load_data():
+    with open('blockchain.txt', mode='r') as f:
+        # readlines reads all lines in a list. A list of strings
+        file_content = f.readlines()
+        # access the global variables
+        global blockchain
+        global open_transactions
+        # file content line one is the blockchain
+        blockchain = file_content[0]
+        # file content line two is the open transactions. [:-1] removes the \n.
+        open_transactions = file_content[1][:-1]
+
+
+load_data()
+
+
+def save_data():
+    # store blockchains and open_transactions. mode write. Using with helps open and close the function. Cannot write a list, must convert to string.
+    with open('blockchain.txt', mode='w') as f:
+        f.write(str(blockchain))
+        f.write('\n')
+        f.write(str(open_transactions))
+    # called when saving data or mining a block
+
+
 def valid_proof(transactions, last_hash, proof):
 
     # guess is a string of transactions, last_hash, and proof. Then encoded to UTF8. This hash is just for proof, for security.
@@ -119,6 +144,7 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         # adds the sender and recipient to participant set
         participants.add(sender)
         participants.add(recipient)
+        save_data()
         return True
     return False
 
@@ -154,6 +180,7 @@ def mine_block():
     }
     # attaches the block to the blockchain
     blockchain.append(block)
+    save_data()
     return True
 
 
