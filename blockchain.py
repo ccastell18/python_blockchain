@@ -1,3 +1,6 @@
+# built in library for high order functions
+import functools
+
 # reward for mining a block. CAPS mean global constant
 MINING_REWARD = 10
 
@@ -32,18 +35,24 @@ def get_balance(participant):
                       for tx in open_transactions if tx['sender'] == participant]
     # adds open transactions amount to sender balance list
     tx_sender.append(open_tx_sender)
-    # summing tx['sender'] amount
-    amount_sent = 0
-    for tx in tx_sender:
-        if len(tx) > 0:
-            amount_sent += tx[0]
+    # reduce method which takes a function, sequence(operation), and initial value. Sum() is used to add all items in the list. The return of tx_sum and sum(tx_amount) is returned to tx_sum, then accesses the next amount from tx_sender list. Inline if statement to make sure there is an amount for tx_amount. tx_sum + 0 is used to show  the mining rewards total with the transactions.  If tx_sum wasn't added, mining a block would not reflect the actual sum but sum of all minings.
+    amount_sent = functools.reduce(
+        lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_sender, 0)
+    # # summing tx['sender'] amount - previous way
+    # amount_sent = 0
+    # for tx in tx_sender:
+    #     if len(tx) > 0:
+    #         amount_sent += tx[0]
     # returns sum of received amounts
     tx_recipient = [[tx['amount'] for tx in block['transactions']
                      if tx['recipient'] == participant] for block in blockchain]
-    amount_received = 0
-    for tx in tx_recipient:
-        if len(tx) > 0:
-            amount_received += tx[0]
+    # sum of money received. Same method as amount sent.
+    amount_received = functools.reduce(
+        lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_recipient, 0)
+    # amount_received = 0 (amount received- previous way)
+    # for tx in tx_recipient:
+    #     if len(tx) > 0:
+    #         amount_received += tx[0]
     # total transactions
     return amount_received - amount_sent
 
@@ -152,6 +161,11 @@ def verify_chain():
     return True
 
 
+# With the all method, the funtion verifies all transactions in open_transactions at one time to return a list of booleans. All true make it true. One false render the list false.
+def verify_transactions():
+    return all([verify_transaction(tx) for tx in open_transactions])
+
+
 waiting_for_input = True
 # while keeps running until it is not true anymore.
 while waiting_for_input:
@@ -160,6 +174,7 @@ while waiting_for_input:
     print('2: Mine a new block')
     print('3: Output the blockchain blocks')
     print('4: Output participants set')
+    print('5: Print transaction validity')
     print('h: Manipulate the chain')
     print('q: Quit')
     user_choice = get_user_choice()
@@ -182,6 +197,11 @@ while waiting_for_input:
         print_blockchain_elements()
     elif user_choice == '4':
         print(participants)
+    elif user_choice == '5':
+        if verify_transactions():
+            print('All transactions are valid')
+        else:
+            print('There are invalid transactions')
     elif user_choice == 'h':
         if len(blockchain) >= 1:
             blockchain[0] = {
@@ -197,7 +217,8 @@ while waiting_for_input:
         print_blockchain_elements()
         print('Invalid blockchain')
         break
-    print(get_balance('Chris'))
+    # formatting the string so the float is only two spaces.
+    print('Balance for {} is ${:6.2f}'.format('Chris', get_balance('Chris')))
 else:
     print('User left!')
 print('Done!')
