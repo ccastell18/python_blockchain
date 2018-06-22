@@ -30,36 +30,39 @@ participants = {'Chris'}
 
 
 def load_data():
-    with open('blockchain.txt', mode='r') as f:
-        # load data should be converted to OrderedDicts as they were saved in the blocks.
-        # readlines reads all lines in a list. A list of strings
-        file_content = f.readlines()
-        # access the global variables
-        global blockchain
-        global open_transactions
-        # file content line one is the blockchain. Convert from json to native python object. [:-1] removes \n
-        blockchain = json.loads(file_content[0][:-1])
-        updated_blockchain = []
-        # convert to OrderedDict
-        for block in blockchain:
-            updated_block = {
-                'previous_hash': block['previous_hash'],
-                'index': block['index'],
-                'proof': block['proof'],
-                # the ordered dict gets stored in the block
-                'transactions': [OrderedDict(
-                    [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
-            }
-            updated_blockchain.append(updated_block)
-        blockchain = updated_blockchain
-        # file content line two is the open transactions.s
-        open_transactions = json.loads(file_content[1])
-        updated_transactions = []
-        for tx in open_transactions:
-            updated_transaction = OrderedDict(
-                [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
-            updated_transactions.append(updated_transaction)
-        open_transactions = updated_transactions
+    try:
+        with open('blockchain.txt', mode='r') as f:
+            # load data should be converted to OrderedDicts as they were saved in the blocks.
+            # readlines reads all lines in a list. A list of strings
+            file_content = f.readlines()
+            # access the global variables
+            global blockchain
+            global open_transactions
+            # file content line one is the blockchain. Convert from json to native python object. [:-1] removes \n
+            blockchain = json.loads(file_content[0][:-1])
+            updated_blockchain = []
+            # convert to OrderedDict
+            for block in blockchain:
+                updated_block = {
+                    'previous_hash': block['previous_hash'],
+                    'index': block['index'],
+                    'proof': block['proof'],
+                    # the ordered dict gets stored in the block
+                    'transactions': [OrderedDict(
+                        [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
+                }
+                updated_blockchain.append(updated_block)
+            blockchain = updated_blockchain
+            # file content line two is the open transactions.s
+            open_transactions = json.loads(file_content[1])
+            updated_transactions = []
+            for tx in open_transactions:
+                updated_transaction = OrderedDict(
+                    [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
+                updated_transactions.append(updated_transaction)
+            open_transactions = updated_transactions
+    except IOError:
+        print('File not found!')
 
 
 load_data()
@@ -78,10 +81,9 @@ def valid_proof(transactions, last_hash, proof):
 
     # guess is a string of transactions, last_hash, and proof. Then encoded to UTF8. This hash is just for proof, for security.
     guess = (str(transactions) + str(last_hash) + str(proof)).encode()
-    print(guess)
     # takes the string and makes a hash of it. Hexdigest makes it a valid string(removed when hash util was created.)
     guess_hash = hash_string_256(guess)
-    print(guess_hash)
+    # the number returned has to begin with '00'
     return guess_hash[0:2] == '00'
 
 
