@@ -1,5 +1,9 @@
 # built in library for high order functions
-import functools
+from functools import reduce
+# hash library
+import hashlib as hl
+# json library (imports complex data as strings, use double quotes on key, value)
+import json
 
 # reward for mining a block. CAPS mean global constant
 MINING_REWARD = 10
@@ -22,7 +26,10 @@ participants = {'Chris'}
 
 def hash_block(block):
     # creates a hash for the current block and str() is used to stringify the value so it can use the join method.
-    return '-'.join([str(block[key]) for key in block])
+    # return '-'.join([str(block[key]) for key in block]) - old  hash
+
+    # hashlib hashes the block so it is unreadable unless you have the hash table.  sha256 creates a 64 character hash. The hash should be a string still. JSON.dumps takes the block, which is a dict, and turns it into a string. encode is called to re-encode to UTF8 as a binary string. Hexdigest is  used to translate sha256 binary string to normal characters. Now hash block contains all of the block's information, including previous_hash, to check if hashes match.
+    return hl.sha256(json.dumps(block).encode()).hexdigest()
 
 
 def get_balance(participant):
@@ -36,7 +43,7 @@ def get_balance(participant):
     # adds open transactions amount to sender balance list
     tx_sender.append(open_tx_sender)
     # reduce method which takes a function, sequence(operation), and initial value. Sum() is used to add all items in the list. The return of tx_sum and sum(tx_amount) is returned to tx_sum, then accesses the next amount from tx_sender list. Inline if statement to make sure there is an amount for tx_amount. tx_sum + 0 is used to show  the mining rewards total with the transactions.  If tx_sum wasn't added, mining a block would not reflect the actual sum but sum of all minings.
-    amount_sent = functools.reduce(
+    amount_sent = reduce(
         lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_sender, 0)
     # # summing tx['sender'] amount - previous way
     # amount_sent = 0
@@ -47,7 +54,7 @@ def get_balance(participant):
     tx_recipient = [[tx['amount'] for tx in block['transactions']
                      if tx['recipient'] == participant] for block in blockchain]
     # sum of money received. Same method as amount sent.
-    amount_received = functools.reduce(
+    amount_received = reduce(
         lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_recipient, 0)
     # amount_received = 0 (amount received- previous way)
     # for tx in tx_recipient:
@@ -98,6 +105,7 @@ def mine_block():
     last_block = blockchain[-1]
     # hashed_block takes in the hash_block function and stores it in previous_hash to verify it matches the previous block.
     hashed_block = hash_block(last_block)
+    print(hashed_block)
     # reward for mining a block transaction
     reward_transaction = {
         'sender': 'MINING',
