@@ -16,13 +16,16 @@ class Wallet:
         private_key, public_key = self.generate_keys()
         self.private_key = private_key
         self.public_key = public_key
-        try:
-            with open('wallet.txt', mode='w') as f:
-                f.write(public_key)
-                f.write('\n')
-                f.write(private_key)
-        except(IOError, IndexError):
-            print('Saving wallet failed...')
+
+    def save_keys(self):
+        if self.public_key != None and self.private_key != None:
+            try:
+                with open('wallet.txt', mode='w') as f:
+                    f.write(self.public_key)
+                    f.write('\n')
+                    f.write(self.private_key)
+            except(IOError, IndexError):
+                print('Saving wallet failed...')
 
     def load_keys(self):
         try:
@@ -35,16 +38,6 @@ class Wallet:
                 self.private_key = private_key
         except (IOError, IndexError):
             print('Loading wallet failed')
-
-    def save_keys(self):
-        if self.public_key != None and self.private_key != None:
-            try:
-                with open('wallet.txt', mode='w') as f:
-                    f.write(self.public_key)
-                    f.write('\n')
-                    f.write(self.private_key)
-            except(IOError, IndexError):
-                print('Saving wallet failed...')
 
     def generate_keys(self):
         # higher the number, more secure.  Higher also means more time to generate. Keys are made in binary format, need to return in string form.
@@ -62,3 +55,13 @@ class Wallet:
                         str(amount)).encode('utf8'))
         signature = signer.sign(h)
         return binascii.hexlify(signature).decode('ascii')
+
+    @staticmethod
+    def verify_transaction(transaction):
+        # check if signature is valid. Mining has no signature
+        # need in binary form
+        public_key = RSA.importKey(binascii.unhexlify(transaction.sender))
+        verifier = PKCS1_v1_5.new(public_key)
+        h = SHA256.new((str(transaction.sender) + str(transaction.recipient) +
+                        str(transaction.amount)).encode('utf8'))
+        return verifier.verify(h, binascii.unhexlify(transaction.signature))
