@@ -7,7 +7,7 @@ from blockchain import Blockchain
 class Node:
     # creating a block chain per created node. uuid4 will create a new id and pass to the Blockchain
     def __init__(self):
-        #self.id = str(uuid4())
+        # self.id = str(uuid4())
         self.id = "Chris"
         self.blockchain = Blockchain(self.id)
 
@@ -22,7 +22,7 @@ class Node:
 
     def print_blockchain_elements(self):
         # must call the chain method from Blockchain()
-        for block in self.blockchain.get_chain():
+        for block in self.blockchain.chain:
             print('Outputting Block')
             print(block)
         else:
@@ -60,7 +60,7 @@ class Node:
                 waiting_for_input = False
             else:
                 print('Input was invalid, please pick a value from the list!')
-            if not Verification.verify_chain(self.blockchain.get_chain()):
+            if not Verification.verify_chain(self.blockchain.chain):
                 self.print_blockchain_elements()
                 print('Invalid blockchain!')
                 break
