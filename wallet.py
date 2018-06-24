@@ -24,8 +24,10 @@ class Wallet:
                     f.write(self.public_key)
                     f.write('\n')
                     f.write(self.private_key)
+                return True
             except(IOError, IndexError):
                 print('Saving wallet failed...')
+                return False
 
     def load_keys(self):
         try:
@@ -36,8 +38,10 @@ class Wallet:
                 private_key = keys[1]
                 self.public_key = public_key
                 self.private_key = private_key
+            return True
         except (IOError, IndexError):
             print('Loading wallet failed')
+            return False
 
     def generate_keys(self):
         # higher the number, more secure.  Higher also means more time to generate. Keys are made in binary format, need to return in string form.
