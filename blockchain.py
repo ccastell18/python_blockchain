@@ -10,6 +10,7 @@ from transaction import Transaction
 from utility.verification import Verification
 
 MINING_REWARD = 10
+print(__name__)
 
 
 class Blockchain:
