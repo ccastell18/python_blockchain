@@ -23,8 +23,9 @@ class Blockchain:
         # unhandled transactions
         self.__open_transactions = []
         # load data on construction
-        self.load_data()
         self.hosting_node = hosting_node_id
+        self.__peer_nodes = set()
+        self.load_data()
 
     @property
     def chain(self):
@@ -57,6 +58,9 @@ class Blockchain:
                         tx['sender'], tx['recipient'], tx['signature'], tx['amount'])
                     updated_transactions.append(updated_transaction)
                 self.__open_transactions = updated_transactions
+                # loading peer nodes
+                peer_nodes = json.loads(file_content[2])
+                self.__peer_nodes = set(peer_nodes)
         except (IOError, IndexError):
             print('Handled exception...')
         finally:
@@ -71,7 +75,9 @@ class Blockchain:
                 f.write('\n')
                 saveable_tx = [tx.__dict__ for tx in self.__open_transactions]
                 f.write(json.dumps(saveable_tx))
-
+                f.write('\n')
+                # list takes the set and converts to a list
+                f.write(json.dumps(list(self.__peer_nodes)))
         except IOError:
             print('Saving failed!')
 
@@ -139,3 +145,17 @@ class Blockchain:
         self.save_data()
         # returning block appended to chain
         return block
+
+    def add_peer_node(self, node):
+        # add to peer node set. node is the node URL
+        self.__peer_nodes.add(node)
+        self.save_data()
+
+    def remove_peer_node(self, node):
+        # discard will remove node for set then saves new set.
+        self.__peer_nodes.discard(node)
+        self.save_data()
+
+    def get_peer_nodes(self):
+        # return a list of peer nodes
+        return list(self.__peer_nodes)
