@@ -2,7 +2,7 @@ from functools import reduce
 import hashlib as hl
 
 import json
-
+import requests
 
 from utility.hash_util import hash_string_256, hash_block
 from block import Block
@@ -15,7 +15,7 @@ print(__name__)
 
 
 class Blockchain:
-    def __init__(self, hosting_node_id):
+    def __init__(self, public_key, node_id):
         # starting block of a blockchain
         genesis_block = Block(0, '', [], 100, 0)
         # initializes empty blockchain
@@ -23,8 +23,9 @@ class Blockchain:
         # unhandled transactions
         self.__open_transactions = []
         # load data on construction
-        self.hosting_node = hosting_node_id
+        self.public_key = public_key
         self.__peer_nodes = set()
+        self.node_id = node_id
         self.load_data()
 
     @property
@@ -40,7 +41,7 @@ class Blockchain:
 
     def load_data(self):
         try:
-            with open('blockchain.txt', mode='r') as f:
+            with open('blockchain-{}.txt'.format(self.node_id), mode='r') as f:
                 file_content = f.readlines()
                 blockchain = json.loads(file_content[0][:-1])
                 updated_blockchain = []
@@ -68,7 +69,7 @@ class Blockchain:
 
     def save_data(self):
         try:
-            with open('blockchain.txt', mode='w') as f:
+            with open('blockchain-{}.txt'.format(self.node_id), mode='w') as f:
                 saveable_chain = [block.__dict__ for block in [Block(block_el.index, block_el.previous_hash, [
                     tx.__dict__ for tx in block_el.transactions], block_el.proof, block_el.timestamp) for block_el in self.__chain]]
                 f.write(json.dumps(saveable_chain))
@@ -91,9 +92,9 @@ class Blockchain:
         return proof
 
     def get_balance(self):
-        if self.hosting_node == None:
+        if self.public_key == None:
             return None
-        participant = self.hosting_node
+        participant = self.public_key
         tx_sender = [[tx.amount for tx in block.transactions
                       if tx.sender == participant] for block in self.__chain]
         open_tx_sender = [tx.amount
@@ -114,25 +115,35 @@ class Blockchain:
         return self.__chain[-1]
 
     def add_transaction(self, recipient, sender, signature, amount=1.0):
-        if self.hosting_node == None:
+        if self.public_key == None:
             return False
         transaction = Transaction(sender, recipient, signature, amount)
         # get_balance is called to be forwarded to the verify transaction.
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
             self.save_data()
+            for node in self.__peer_nodes:
+                url = 'http://{}/broadcast-transaction'.format(node)
+                response = requests.post(url, json={
+                    'sender': sender, 'recipient': recipient, 'amount': amount, 'signature': signature})
+                try:
+                    if response.status_code == 400 or response.status_code == 500:
+                        print("Transaction declined, needs resolving")
+                        return False
+                except requests.exceptions.ConnectionError:
+                    continue
             return True
         return False
 
     def mine_block(self):
-        if self.hosting_node == None:
+        if self.public_key == None:
             return None
         last_block = self.__chain[-1]
         hashed_block = hash_block(last_block)
         proof = self.proof_of_work()
 
         reward_transaction = Transaction(
-            'MINING', self.hosting_node, '', MINING_REWARD)
+            'MINING', self.public_key, '', MINING_REWARD)
         copied_transactions = self.__open_transactions[:]
         for tx in copied_transactions:
             if not Wallet.verify_transaction(tx):
